@@ -9,7 +9,7 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-
+/*
 // Crear un pool de conexiones para despliegue
 const pool = mysql.createPool({
     host: process.env.MYSQL_ADDON_HOST,
@@ -24,8 +24,8 @@ const pool = mysql.createPool({
         rejectUnauthorized: false
     }
 });
+*/
 
-/*
 // Crear un pool de conexiones para produccion
 const pool = mysql.createPool({
     host: process.env.DB_HOST,
@@ -40,7 +40,7 @@ const pool = mysql.createPool({
         rejectUnauthorized: false
     }
 });
-*/
+
 
 // Función para manejar errores de conexión
 pool.on('error', (err) => {
@@ -128,17 +128,28 @@ app.get('/usuario', async (req, res) => {
 app.get('/ejercicios', async (req, res) => {
     try {
         const [results] = await pool.promise().query('SELECT * FROM ejercicios');
-        res.json(results);
+
+        // Convertir el campo 'musculos' de string a array
+        const ejercicios = results.map(ejercicio => ({
+            ...ejercicio,
+            musculos: ejercicio.musculos ? ejercicio.musculos.split(',') : []
+        }));
+
+        res.json(ejercicios);
     } catch (err) {
+        console.error('Error al obtener ejercicios:', err);
         res.status(500).json(err);
     }
 });
 
 // Ruta para agregar un ejercicio
 app.post('/ejercicios', async (req, res) => {
-    const { nombre, musculos, descripcion, observaciones, video_o_imagen_url } = req.body;
+    let { nombre, musculos, descripcion, observaciones, video_o_imagen_url } = req.body;
 
     try {
+        // Convertir array a string separado por comas (Ej: "Pecho,Bíceps")
+        musculos = Array.isArray(musculos) ? musculos.join(',') : musculos;
+
         const [result] = await pool.promise().query(
             'INSERT INTO ejercicios (nombre, musculos, descripcion, observaciones, video_o_imagen_url) VALUES (?, ?, ?, ?, ?)',
             [nombre, musculos, descripcion, observaciones, video_o_imagen_url]
@@ -146,6 +157,7 @@ app.post('/ejercicios', async (req, res) => {
 
         res.status(201).json({ message: 'Ejercicio creado con éxito', id: result.insertId });
     } catch (error) {
+        console.error('Error al insertar en la base de datos:', error);
         res.status(500).json({ message: 'Error al crear el ejercicio' });
     }
 });
