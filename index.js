@@ -141,44 +141,19 @@ app.get('/ejercicios', async (req, res) => {
     }
 });
 
-// Ruta para agregar un ejercicio
-app.put('/ejercicios/:id', async (req, res) => {
-    const { id } = req.params;
-    let { nombre, musculos, descripcion, observaciones } = req.body;
-
-    try {
-        // Evitar undefined en observaciones
-        observaciones = observaciones ?? "";
-
-        // Convertir array de músculos en string si es necesario
-        musculos = Array.isArray(musculos) ? musculos.join(',') : musculos;
-
-        const [result] = await pool.promise().query(
-            'UPDATE ejercicios SET nombre = ?, musculos = ?, descripcion = ?, observaciones = ? WHERE id = ?',
-            [nombre, musculos, descripcion, observaciones, id]
-        );
-
-        if (result.affectedRows > 0) {
-            res.status(200).json({ message: 'Ejercicio actualizado con éxito' });
-        } else {
-            res.status(404).json({ message: 'Ejercicio no encontrado' });
-        }
-    } catch (error) {
-        console.error('Error al actualizar el ejercicio:', error);
-        res.status(500).json({ message: 'Error al actualizar el ejercicio' });
-    }
-});
-
 // Ruta para actualizar un ejercicio (nombre, músculos, descripción y observaciones)
 app.put('/ejercicios/:id', async (req, res) => {
     const { id } = req.params;
     let { nombre, musculos, descripcion, observaciones } = req.body;
 
+    let connection;
     try {
-        // Convertir array de músculos en string separado por comas
+        connection = await pool.getConnection();
+
+        observaciones = observaciones ?? "";
         musculos = Array.isArray(musculos) ? musculos.join(',') : musculos;
 
-        const [result] = await pool.promise().query(
+        const [result] = await connection.query(
             'UPDATE ejercicios SET nombre = ?, musculos = ?, descripcion = ?, observaciones = ? WHERE id = ?',
             [nombre, musculos, descripcion, observaciones, id]
         );
@@ -191,9 +166,10 @@ app.put('/ejercicios/:id', async (req, res) => {
     } catch (error) {
         console.error('Error al actualizar el ejercicio:', error);
         res.status(500).json({ message: 'Error al actualizar el ejercicio' });
+    } finally {
+        if (connection) connection.release();
     }
 });
-
 
 // Ruta para eliminar un ejercicio
 app.delete('/ejercicios/:id', async (req, res) => {
