@@ -9,6 +9,7 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
+/*
 // Crear un pool de conexiones para despliegue
 const pool = mysql.createPool({
     host: process.env.MYSQL_ADDON_HOST,
@@ -23,8 +24,8 @@ const pool = mysql.createPool({
         rejectUnauthorized: false
     }
 });
+*/
 
-/*
 // Crear un pool de conexiones para produccion
 const pool = mysql.createPool({
     host: process.env.DB_HOST,
@@ -39,7 +40,7 @@ const pool = mysql.createPool({
         rejectUnauthorized: false
     }
 });
-*/
+
 
 // Función para manejar errores de conexión
 pool.on('error', (err) => {
@@ -141,19 +142,38 @@ app.get('/ejercicios', async (req, res) => {
     }
 });
 
-// Ruta para actualizar un ejercicio (nombre, músculos, descripción y observaciones)
+// Ruta para agregar un ejercicio
+app.post('/ejercicios', async (req, res) => {
+    let { nombre, musculos, descripcion, observaciones, video_o_imagen_url } = req.body;
+
+    try {
+        // Convertir array a string separado por comas (Ej: "Pecho,Bíceps")
+        musculos = Array.isArray(musculos) ? musculos.join(',') : musculos;
+
+        const [result] = await pool.promise().query(
+            'INSERT INTO ejercicios (nombre, musculos, descripcion, observaciones, video_o_imagen_url) VALUES (?, ?, ?, ?, ?)',
+            [nombre, musculos, descripcion, observaciones, video_o_imagen_url]
+        );
+
+        res.status(201).json({ message: 'Ejercicio creado con éxito', id: result.insertId });
+    } catch (error) {
+        console.error('Error al insertar en la base de datos:', error);
+        res.status(500).json({ message: 'Error al crear el ejercicio' });
+    }
+});
+
+// Ruta para actualizar un ejercicio
 app.put('/ejercicios/:id', async (req, res) => {
     const { id } = req.params;
     let { nombre, musculos, descripcion, observaciones } = req.body;
 
-    let connection;
     try {
-        connection = await pool.getConnection();
+        // Convertir array de músculos a string separado por comas si es un array
+        if (Array.isArray(musculos)) {
+            musculos = musculos.join(',');
+        }
 
-        observaciones = observaciones ?? "";
-        musculos = Array.isArray(musculos) ? musculos.join(',') : musculos;
-
-        const [result] = await connection.query(
+        const [result] = await pool.promise().query(
             'UPDATE ejercicios SET nombre = ?, musculos = ?, descripcion = ?, observaciones = ? WHERE id = ?',
             [nombre, musculos, descripcion, observaciones, id]
         );
@@ -166,8 +186,6 @@ app.put('/ejercicios/:id', async (req, res) => {
     } catch (error) {
         console.error('Error al actualizar el ejercicio:', error);
         res.status(500).json({ message: 'Error al actualizar el ejercicio' });
-    } finally {
-        if (connection) connection.release();
     }
 });
 
