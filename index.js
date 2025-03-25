@@ -9,6 +9,7 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
+/*
 // Crear un pool de conexiones para despliegue
 const pool = mysql.createPool({
     host: process.env.MYSQL_ADDON_HOST,
@@ -23,7 +24,8 @@ const pool = mysql.createPool({
         rejectUnauthorized: false
     }
 });
-/*
+*/
+
 // Crear un pool de conexiones para produccion
 const pool = mysql.createPool({
     host: process.env.DB_HOST,
@@ -38,7 +40,8 @@ const pool = mysql.createPool({
         rejectUnauthorized: false
     }
 });
-*/
+
+
 // Función para manejar errores de conexión
 pool.on('error', (err) => {
     console.error('Error en la conexión con la base de datos:', err);
