@@ -294,6 +294,42 @@ app.delete('/rutinas/:id', async (req, res) => {
     }
 });
 
+// Ruta para actualizar el nombre de una rutina
+app.put('/rutinas/:id', async (req, res) => {
+    const { id } = req.params;
+    const { nombre } = req.body;
+    const token = req.headers.authorization?.split(" ")[1];
+
+    if (!token) return res.status(401).json({ message: "No autorizado" });
+
+    try {
+        console.log(token);
+        const decoded = jwt.verify(token, 'secreto');
+
+        // Verificar si la rutina pertenece al usuario
+        const [existingRoutine] = await pool.promise().query(
+            'SELECT * FROM rutinas WHERE id = ? AND usuario_id = ?',
+            [id, decoded.id]
+        );
+
+        if (existingRoutine.length === 0) {
+            return res.status(404).json({ message: "Rutina no encontrada" });
+        }
+
+        // Actualizar el nombre de la rutina
+        await pool.promise().query(
+            'UPDATE rutinas SET nombre = ? WHERE id = ?',
+            [nombre, id]
+        );
+
+        res.status(200).json({ message: "Rutina actualizada con éxito" });
+    } catch (error) {
+        console.error("Error al actualizar la rutina:", error);
+        res.status(500).json({ message: "Error al actualizar la rutina" });
+    }
+});
+
+
 // Ruta para actualizar el orden de las rutinas
 app.put('/rutinas/updateOrder', async (req, res) => {
     const { order } = req.body;
@@ -474,10 +510,6 @@ app.put('/rutina_ejercicios/orden', async (req, res) => {
         return res.status(500).json({ error: 'Hubo un problema al actualizar el orden de los ejercicios' });
     }
 });
-
-
-
-
 
 app.get('/rutinas/:id', async (req, res) => {
     const { id } = req.params;
