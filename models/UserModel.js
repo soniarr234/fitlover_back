@@ -3,7 +3,7 @@ const db = require('../config/db');
 
 const createUser = async (nombre, apellidos, email, passwordHash) => {
   const [result] = await db.execute(
-    'INSERT INTO usuarios (nombre, apellidos, email, password) VALUES (?, ?, ?, ?)',
+    'INSERT INTO usuarios (nombre, apellidos, email, password_hash) VALUES (?, ?, ?, ?)',
     [nombre, apellidos, email, passwordHash]
   );
   return result;
