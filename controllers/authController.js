@@ -37,7 +37,7 @@ const login = async (req, res) => {
 
   try {
     const user = await getUserByEmail(email);
-    if (!user || !(await bcrypt.compare(password, user.password))) {
+    if (!user || !(await bcrypt.compare(password, user.password_hash))) {
       return res.status(401).json({ msg: 'Correo o contraseña incorrectos.' });
     }
 
